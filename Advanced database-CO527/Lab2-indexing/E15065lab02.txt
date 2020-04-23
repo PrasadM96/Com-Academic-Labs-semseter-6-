@@ -1,0 +1,129 @@
+E/15/065
+
+CO527 Advanced Database Systems
+Lab02 
+
+1. Assuming no indexes are used, record the query execution time for retrieving all the 
+employees by first name in ascending order. 
+
+	SELECT *  FROM employees ORDER BY first_name ASC;
+	300024 row(s) returned	0.750 sec / 0.516 sec
+
+2. Create an index called fname_index on the first_name of the employee table. Retrieve 
+all the employees by first name and record the query execution time. Observe the 
+performance improvement gained when accessing with index.
+
+	CREATE INDEX fname_index ON employees(first_name);
+
+	SELECT *  FROM employees ORDER BY first_name ASC;
+
+	300024 row(s) returned	0.563 sec / 0.391 sec
+
+	In Question 1 the execution time was 0.750 sec / 0.516 sec but in question 2 it has reduced to
+	0.563 sec / 0.391 sec. Therefore after adding a index the performance has increased.
+
+ 3. Which indexing technique has been used when creating the above index? Hint: You 
+can use SHOW INDEX FROM [mytable]; to see details of your indexes. 
+
+	SHOW INDEX FROM employees;
+
+	The indexing type is Btree. When creating an index mysql will maintain a Btree structure for 
+	keep the selected index column values and addresses.
+
+	employees 1 fname_index 1 first_name A 1266 BTREE YES
+
+
+4. Create unique index on emp_no, first_name and last_name of employees table. 
+Retrieve all the employees by emp_no, first_name and last_name. 1 Observe if there is 
+any performance improvement with respect to question1. If not, explain any possible 
+reason.
+
+	CREATE UNIQUE INDEX fname_unique_index ON employees(emp_no,first_name,last_name);
+
+	SELECT emp_no,first_name,last_name  FROM employees ORDER BY first_name ASC;
+
+	300024 row(s) returned	0.468 sec / 0.250 sec
+
+	The performance has increased when compared to question1. Because the query retrieve all 
+	the employees by columns which we used to create the index.
+
+5. Take the following 3 queries.
+	A. select distinct emp_no from dept_manager where from_date>= ’1985-01-01’ and 
+	dept_no>= ’d005’; 
+	B. select distinct emp_no from dept_manager where from_date>= ’1996-01-03’ and 
+	dept_no>= ’d005’; 
+	C. select distinct emp_no from dept_manager where from_date>= ’1985-01-01’ and 
+	dept_no<= ’d009’;
+ 
+	I. Choose one single simple index(i.e. index on one attribute) that is most likely to 
+	speed up all 3 queries giving reasons for your selection. 
+
+	The best way to improve the performance of SELECT operations is to create indexes on one 
+	or more of the columns that are tested in the query. The index entries act like pointers to the 
+	table rows, allowing the query to quickly determine which rows match a condition in the 
+	WHERE clause, and retrieve the other column values for those rows. 
+
+	 Therefore in this case it is better to use index for dept_no or from_date. But here using an 
+	index for the from_date in descending order is better. Because the number of different values 
+	in department number is small. Therefore there may be a lot of tuples comes under one 
+	department number. Then we have to check a lot of columns and it takes more time. So 
+	taking the from_date as index is better.
+
+	II. For each of the 3 queries, check if MySQL storage engine used that index. If not, 
+	give a short explanation why not. You can prefix your select queries with EXPLAIN 
+	EXTENDED or with EXPLAIN to display a query execution plan. (Note that in 
+	MySQL InnoDB engine uses a clustered index usually on the primary key of the 
+	table, by default. We only care about the index you create.) 
+
+	i) explain select distinct emp_no from dept_manager where from_date>= '1985-01-01' 
+	and dept_no>= 'd005';
+	'1', 'SIMPLE', 'dept_manager', NULL, 'index', 'PRIMARY,dept_manager_ibfk_1', 
+	'PRIMARY', '20', NULL, '24', '19.44', 'Using where'
+	ii) explain select distinct emp_no from dept_manager where from_date>= '1996-01-03' 
+	and dept_no>= 'd005';
+	'1', 'SIMPLE', 'dept_manager', NULL, 'index', 'PRIMARY,dept_manager_ibfk_1', 
+	'PRIMARY', '20', NULL, '24', '19.44', 'Using where'
+	iii) explain select distinct emp_no from dept_manager where from_date>= '1985-01-01' 
+	and dept_no<= 'd009';
+	'1', 'SIMPLE', 'dept_manager', NULL, 'range', 'PRIMARY,dept_manager_ibfk_1', 
+	'dept_manager_ibfk_1', '16', NULL, '4', '33.33', 'Using index condition; Using where; 
+	Using temporary'
+
+	Possible Keys:- 
+	In Query 1 : 
+	PRIMARY,dept_manager_ibfk_1
+	In Query 2 : 
+	PRIMARY,dept_manager_ibfk_1
+	In Query 3 : 
+	PRIMARY,dept_manager_ibfk_1
+
+	Possible keys shows the keys that can be used by MySQL to find rows from the table. These 
+	keys may or may not be used in practice. MySQL InnoDB ENGINE is not using the attribute we 
+	have selected as the index(from_date) because by default MySQL InnoDB engine uses a 
+	clustered index usually on the primary key of the table, by default.
+
+
+6. Consider the queries you wrote for questions 2 - 10 in Lab 01 assignment. Give with 
+short explanations, which attributes on which relations should be used for creating 
+indexes that could speed up your queries. 
+
+	Queries for question 2-10, includes many WHERE clauses and JOIN conditions. Here we have 
+	to use equal operations and greater than, less than operations. To improve performance of the 
+	queries (reduce execution time) it is very important to use indexes.
+	
+	By looking at the WHERE clauses and JOIN conditions we can identify attributes to make 
+	indexes. However when consider departments and dept_manager tables, they are very small 
+	compared to others. Therefore using indexes in those two tables is not suitable. We can use 
+	indexes  as below.
+
+		employees – emp_no., sex
+		dept_emp – emp_no, dept_no
+		title - titles, emp_no, from_date, to_date
+		salaries – salary, emp_no
+
+7. Assume that most of the queries on a relation are insert/update/delete. What will 
+happen to the query execution time if that relation has an index created?
+
+	Then query execution time will be a larger value for insert /update /delete. Because when doing 
+	these three operations they have to follow additional steps to do reindexing. These steps 
+	happens automatically but take more time.
